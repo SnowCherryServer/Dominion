@@ -6,29 +6,34 @@ on:
   pull_request:
     branches: [ "master" ]
 
-
 jobs:
   build:
-    #	配置权限
-    permissions: write-all
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: "Pull & Checkout"
+        uses: https://ssl.lunadeer.cn:14446/actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: "Set up JDK 21"
-        uses: actions/setup-java@v3
+        uses: https://ssl.lunadeer.cn:14446/actions/setup-java@v3
         with:
           java-version: '21'
           distribution: 'zulu'
           cache: gradle
       - name: "Build with Gradle"
-        run: ./gradlew buildPlugin
-      - name: "Copy jar to staging"
         run: |
-          mkdir staging && cp build/libs/*.jar staging/
+          ./gradlew buildPlugin
+      - name: "Copy jar to staging"
+        run: mkdir staging && cp build/libs/*.jar staging/
       - name: "Build & test"
         run: |
-          TAG=$(echo $GITHUB_REF | sed 's/refs\/tags\///')
           echo "done!"
+      - name: "setup go for release script"
+        run: |
+          wget --no-check-certificate https://golang.google.cn/dl/go1.21.6.linux-amd64.tar.gz
+          rm -rf /usr/local/go && tar -C /usr/local -xzf go1.21.6.linux-amd64.tar.gz
+          ln -s /usr/local/go/bin/go /usr/bin/go
+          go version
       - name: Get the date
         id: date
         run: echo "::set-output name=date::$(date +'%m-%d')"
@@ -36,4 +41,5 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: ${{ steps.date.outputs.date }}-Snow-Motd
-          path: staging/*.jar
+          path: target/*.jar
+
